@@ -1,0 +1,66 @@
+<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F9D976"/>
+      <stop offset="50%" stop-color="#D4AF37"/>
+      <stop offset="100%" stop-color="#B8941E"/>
+    </linearGradient>
+    
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Rounded Rectangle Background -->
+  <rect width="180" height="180" rx="40" fill="#047857"/>
+  
+  <!-- Gradient Overlay -->
+  <rect width="180" height="180" rx="40" fill="url(#goldGrad)" opacity="0.1"/>
+  
+  <!-- Center Glow -->
+  <circle cx="90" cy="90" r="70" fill="url(#goldGrad)" opacity="0.2" filter="url(#glow)"/>
+  
+  <!-- AI Text -->
+  <text 
+    x="38" 
+    y="110"
+    fill="white"
+    font-family="Arial, sans-serif"
+    font-size="42"
+    font-weight="900"
+    letter-spacing="1"
+    filter="url(#shadow)">
+    AI
+  </text>
+  
+  <!-- Arabic Hifz (Closer) -->
+  <text 
+    x="80" 
+    y="112"
+    fill="url(#goldGrad)"
+    font-family="serif"
+    font-size="56"
+    font-weight="700"
+    filter="url(#glow)">
+    حفظ
+  </text>
+  
+  <!-- Accent Dots -->
+  <circle cx="32" cy="55" r="6" fill="url(#goldGrad)" opacity="0.8">
+    <animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="148" cy="125" r="5" fill="url(#goldGrad)" opacity="0.6">
+    <animate attributeName="opacity" values="0.4;0.8;0.4" dur="2.5s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Decorative Underline -->
+  <line x1="35" y1="125" x2="145" y2="125" stroke="url(#goldGrad)" stroke-width="2.5" opacity="0.4"/>
+</svg>
