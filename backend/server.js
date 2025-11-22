@@ -33,6 +33,10 @@ app.use('/revision', revisionRoutes);
 app.use('/history', historyRoutes);
 app.use('/profile', profileRoutes);
 
+app.get('/', (req, res) => {
+  res.send('Quran Memorization App Backend is running');
+});
+
 // Placeholder cron (Phase 2 logic TBD)
 cron.schedule('0 0 * * *', () => {
   console.log('Daily cron placeholder - Phase 2 feature');
