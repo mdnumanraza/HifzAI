@@ -155,6 +155,7 @@ export default function Navbar() {
               {/* Spacer to push rewards/settings/profile to the right */}
               <div className="flex-1"></div>
 
+
               {/* Rewards */}
               <Link
                 to="/rewards"

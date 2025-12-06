@@ -6,6 +6,7 @@ import MemorizeCard from '../components/memorization/MemorizeCard.jsx';
 import Card from '../components/ui/Card.jsx';
 import MilestoneModal from '../components/ui/MilestoneModal.jsx';
 import Confetti from '../components/ui/Confetti.jsx';
+import TravelModeToggle from '../components/travel/TravelModeToggle.jsx';
 
 export default function Memorization() {
   const dailyAyahs = useStore(s => s.dailyAyahs);
@@ -69,6 +70,11 @@ export default function Memorization() {
           {user?.dailyGoal} ayahs to memorize today
         </p>
       </motion.div>
+
+      {/* Travel Mode Toggle in Memorization page */}
+      <div className="mb-6 flex justify-center">
+        <TravelModeToggle />
+      </div>
 
       {/* Loading State */}
       {loading && (

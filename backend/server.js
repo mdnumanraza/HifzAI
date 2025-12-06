@@ -11,6 +11,8 @@ import rewardsRoutes from './routes/rewards.js';
 import revisionRoutes from './routes/revision.js';
 import historyRoutes from './routes/history.js';
 import profileRoutes from './routes/profile.js';
+import aiRoutes from './routes/ai.js';
+import monitoringRoutes from './routes/monitoring.js';
 import { connectDB } from './config/db.js';
 
 dotenv.config();
@@ -32,6 +34,8 @@ app.use('/rewards', rewardsRoutes);
 app.use('/revision', revisionRoutes);
 app.use('/history', historyRoutes);
 app.use('/profile', profileRoutes);
+app.use('/ai', aiRoutes);
+app.use('/monitoring', monitoringRoutes);
 
 app.get('/', (req, res) => {
   res.send('Quran Memorization App Backend is running');

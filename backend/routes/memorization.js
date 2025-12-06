@@ -265,38 +265,59 @@ router.get('/next-batch', authMiddleware, async (req, res) => {
 		
 		// Start from where daily goal would end
 		for (let i = 0; i < user.dailyGoal; i++) {
-			const surahMeta = await getSurahMeta(surah);
-			if (ayah > surahMeta.ayahs) {
-				surah += 1;
-				ayah = 1;
+			try {
+				const surahMeta = await getSurahMeta(surah);
+				if (ayah > surahMeta.ayahs) {
+					surah += 1;
+					ayah = 1;
+				}
+				ayah += 1;
+			} catch (err) {
+				console.error(`Failed to fetch surah meta for ${surah}`, err);
+				// Continue with next iteration on error
+				continue;
 			}
-			ayah += 1;
 		}
 		
-		// Now fetch the next batch
-		for (let i = 0; i < count; i++) {
-			const surahMeta = await getSurahMeta(surah);
-			if (ayah > surahMeta.ayahs) {
-				surah += 1;
-				ayah = 1;
-				// Check if we've reached the end of Quran
-				if (surah > 114) break;
-			}
-			
+		// Now fetch the next batch with better error handling
+		for (let i = 0; i < count && surah <= 114; i++) {
 			try {
+				const surahMeta = await getSurahMeta(surah);
+				if (ayah > surahMeta.ayahs) {
+					surah += 1;
+					ayah = 1;
+					// Check if we've reached the end of Quran
+					if (surah > 114) break;
+					// Get meta for new surah
+					continue;
+				}
+				
 				const ayahData = await getAyahWithAudio(surah, ayah);
 				ayahs.push(ayahData);
+				ayah += 1;
 			} catch (err) {
 				console.error(`Failed to fetch ayah ${surah}:${ayah}`, err);
+				// Skip this ayah and continue
+				ayah += 1;
 			}
-			
-			ayah += 1;
 		}
 		
 		res.json({ ayahs });
 	} catch (err) {
 		console.error(err);
 		res.status(500).json({ message: 'Failed to fetch next batch' });
+	}
+});
+
+// Get single ayah with audio for frontend
+router.get('/ayah/:surah/:ayah', async (req, res) => {
+	try {
+		const { surah, ayah } = req.params;
+		const ayahData = await getAyahWithAudio(parseInt(surah), parseInt(ayah));
+		res.json(ayahData);
+	} catch (err) {
+		console.error('Error fetching ayah:', err);
+		res.status(500).json({ message: 'Failed to fetch ayah data' });
 	}
 });
 

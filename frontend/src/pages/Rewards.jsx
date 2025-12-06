@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Trophy, Coins, Award, Star, Zap, Crown, Shield, Flame } from 'lucide-react';
 import useStore from '../store/useStore.js';
 import Card from '../components/ui/Card.jsx';
+import { surahBadges, milestoneBadges } from '../data/badges.js';
 
 const badgeIcons = {
   'Surah Champion': Trophy,
@@ -21,14 +22,36 @@ const badgeColors = {
 };
 
 export default function Rewards() {
-  const { rewards, fetchRewards } = useStore();
+  const { rewards, user, fetchRewards, fetchProfileStats } = useStore();
 
   useEffect(() => {
     fetchRewards();
+    fetchProfileStats();
   }, []);
 
   const BadgeIcon = (badge) => badgeIcons[badge] || badgeIcons.default;
   const badgeGradient = (badge) => badgeColors[badge] || badgeColors.default;
+
+  // Compute earned badges from user + rewards, separating surah and other badges
+  const { surahCompletionBadges, otherBadges } = useMemo(() => {
+    const badgeSet = new Set([...(rewards?.badges || []), ...(user?.badges || [])]);
+    const surahCompletion = [];
+    const others = [];
+
+    badgeSet.forEach((id) => {
+      if (typeof id === 'string' && id.startsWith('surah_')) {
+        const num = parseInt(id.replace('surah_', ''));
+        const sb = surahBadges.find(b => b.surah === num);
+        if (sb) surahCompletion.push(sb);
+      } else {
+        others.push(id);
+      }
+    });
+
+    // Sort surah badges by surah number
+    surahCompletion.sort((a, b) => a.surah - b.surah);
+    return { surahCompletionBadges: surahCompletion, otherBadges: others };
+  }, [rewards, user]);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -189,59 +212,102 @@ export default function Rewards() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <h2 className="text-2xl font-bold text-white mb-6">Your Badges ({rewards.badges.length})</h2>
-        
-        {rewards.badges.length === 0 ? (
+        <h2 className="text-2xl font-bold text-white mb-6">Your Badges ({(rewards.badges?.length || 0) + ((user?.badges?.length || 0) - (rewards.badges ? rewards.badges.filter(b => user?.badges?.includes(b)).length : 0))})</h2>
+
+        {surahCompletionBadges.length === 0 && otherBadges.length === 0 ? (
           <Card className="text-center py-12">
             <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <p className="text-xl text-gray-600">No badges earned yet</p>
             <p className="text-gray-500 mt-2">Keep memorizing to earn your first badge!</p>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {rewards.badges.map((badge, index) => {
-              const Icon = BadgeIcon(badge);
-              const gradient = badgeGradient(badge);
-              
-              return (
-                <motion.div
-                  key={badge}
-                  initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
-                  animate={{ opacity: 1, scale: 1, rotateY: 0 }}
-                  transition={{ 
-                    delay: index * 0.1,
-                    duration: 0.5,
-                    type: 'spring'
-                  }}
-                  whileHover={{ scale: 1.05, rotateY: 10 }}
-                >
-                  <Card className={`text-center relative overflow-hidden bg-gradient-to-br ${gradient} bg-opacity-10`}>
-                    {/* Shine effect */}
+          <div className="space-y-10">
+            {/* Surah Completion Badges */}
+            {surahCompletionBadges.length > 0 && (
+              <div>
+                <h3 className="text-xl font-bold text-white mb-4">Surah Completion</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {surahCompletionBadges.map((sb, index) => (
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"
-                      animate={{ x: ['-100%', '200%'] }}
-                      transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
-                    />
+                      key={sb.id}
+                      initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+                      animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                      transition={{ delay: index * 0.08, duration: 0.5, type: 'spring' }}
+                      whileHover={{ scale: 1.05, rotateY: 10 }}
+                    >
+                      <Card className={`text-center relative overflow-hidden bg-gradient-to-br ${sb.color} bg-opacity-10`}>
+                        <motion.div
+                          className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"
+                          animate={{ x: ['-100%', '200%'] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                        />
+                        <div className="relative z-10">
+                          <motion.div
+                            animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                            className={`w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br ${sb.color} flex items-center justify-center shadow-gold-glow`}
+                          >
+                            <span className="text-2xl">{sb.icon}</span>
+                          </motion.div>
+                          <h3 className="text-lg font-bold text-white mb-1">{sb.name}</h3>
+                          <p className="text-xs text-white/80">Surah #{sb.surah} • Completed</p>
+                        </div>
+                      </Card>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
 
-                    <div className="relative z-10">
+            {/* Other Badges: Streak, Milestones, Global */}
+            {otherBadges.length > 0 && (
+              <div>
+                <h3 className="text-xl font-bold text-white mb-4">Milestones & Streaks</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {otherBadges.map((badge, index) => {
+                    // Try milestone metadata
+                    const milestone = milestoneBadges.find(m => m.id === badge);
+                    const Icon = BadgeIcon(badge);
+                    const gradient = milestone ? milestone.color : badgeGradient(badge);
+                    const title = milestone ? milestone.name : badge;
+                    const description = milestone ? milestone.description : 'Earned';
+
+                    return (
                       <motion.div
-                        animate={{ 
-                          scale: [1, 1.1, 1],
-                          rotate: [0, 5, -5, 0]
-                        }}
-                        transition={{ duration: 2, repeat: Infinity }}
-                        className={`w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center shadow-gold-glow`}
+                        key={badge}
+                        initial={{ opacity: 0, scale: 0.8, rotateY: -90 }}
+                        animate={{ opacity: 1, scale: 1, rotateY: 0 }}
+                        transition={{ delay: index * 0.08, duration: 0.5, type: 'spring' }}
+                        whileHover={{ scale: 1.05, rotateY: 10 }}
                       >
-                        <Icon className="w-10 h-10 text-white" />
+                        <Card className={`text-center relative overflow-hidden bg-gradient-to-br ${gradient} bg-opacity-10`}>
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-20"
+                            animate={{ x: ['-100%', '200%'] }}
+                            transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                          />
+                          <div className="relative z-10">
+                            <motion.div
+                              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, -5, 0] }}
+                              transition={{ duration: 2, repeat: Infinity }}
+                              className={`w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br ${gradient} flex items-center justify-center shadow-gold-glow`}
+                            >
+                              {milestone ? (
+                                <span className="text-2xl">{milestone.icon}</span>
+                              ) : (
+                                <Icon className="w-10 h-10 text-white" />
+                              )}
+                            </motion.div>
+                            <h3 className="text-lg font-bold text-white mb-2">{title}</h3>
+                            <p className="text-sm text-white/80">{description}</p>
+                          </div>
+                        </Card>
                       </motion.div>
-
-                      <h3 className="text-lg font-bold text-navy-primary mb-2">{badge}</h3>
-                      <p className="text-sm text-gray-600">Earned</p>
-                    </div>
-                  </Card>
-                </motion.div>
-              );
-            })}
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </motion.div>

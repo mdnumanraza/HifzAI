@@ -18,7 +18,10 @@ import Navbar from './components/layout/Navbar.jsx';
 import Confetti from './components/ui/Confetti.jsx';
 import BadgeCelebration from './components/celebration/BadgeCelebration.jsx';
 import Toast from './components/ui/Toast.jsx';
+import TravelMiniPlayer from './components/travel/TravelMiniPlayer.jsx';
+import TravelAudioController from './components/travel/TravelAudioController.jsx';
 import useStore from './store/useStore.js';
+import useTravelModeStore from './store/useTravelModeStore.js';
 
 const PrivateRoute = ({ children }) => {
   const token = useStore(s => s.token);
@@ -106,6 +109,9 @@ export default function App() {
       {showConfetti && <Confetti />}
       <BadgeCelebration />
       <Toast />
+      {/* Travel Mode components */}
+      <TravelAudioController />
+      <TravelMiniPlayer />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Award, Star } from 'lucide-react';
+import { X, Award, Star, Sparkles, Crown, Flame, Zap } from 'lucide-react';
 import useStore from '../../store/useStore.js';
 import Card from '../ui/Card.jsx';
 import Button from '../ui/Button.jsx';
@@ -36,8 +36,20 @@ export default function BadgeCelebration() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
+        {/* Ambient animated background */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(1200px 600px at 10% 20%, rgba(255,255,255,0.08), transparent 60%), radial-gradient(1000px 500px at 90% 80%, rgba(255,255,255,0.06), transparent 60%), linear-gradient(135deg, rgba(20,24,35,0.85) 0%, rgba(24,28,40,0.75) 100%)',
+          }}
+      >
+        </motion.div>
         <motion.div
           initial={{ scale: 0.5, rotate: -10 }}
           animate={{ scale: 1, rotate: 0 }}
@@ -45,11 +57,22 @@ export default function BadgeCelebration() {
           transition={{ type: 'spring', stiffness: 200, damping: 15 }}
           className="relative max-w-lg w-full"
         >
-          <Card className={`relative overflow-hidden bg-gradient-to-br ${badge.color}`}>
+          <div
+            className="relative overflow-hidden rounded-2xl shadow-2xl backdrop-blur-xl border border-white/10"
+            style={{
+              background:
+                'linear-gradient(135deg, rgba(255,255,255,0.16) 0%, rgba(240,240,255,0.12) 100%)',
+            }}
+          >
+            {/* Animated gradient border */}
+            <div className="absolute inset-0 rounded-2xl p-[2px]" style={{
+              background: 'linear-gradient(135deg, rgba(255,255,255,0.35), rgba(255,215,0,0.25))'
+            }} />
+            <div className="relative rounded-2xl">
             {/* Close button */}
             <button
               onClick={closeBadgeCelebration}
-              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/15 hover:bg-white/25 transition-colors"
             >
               <X className="w-5 h-5 text-white" />
             </button>
@@ -74,7 +97,7 @@ export default function BadgeCelebration() {
                   }}
                   className="absolute top-1/2 left-1/2"
                 >
-                  <Star className="w-4 h-4 text-yellow-300 fill-yellow-300" />
+                  <Star className="w-4 h-4 text-gold-primary fill-gold-primary" />
                 </motion.div>
               ))}
             </div>
@@ -87,7 +110,9 @@ export default function BadgeCelebration() {
                 transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
                 className="mb-6"
               >
-                <Award className="w-24 h-24 mx-auto mb-4" />
+                <div className="mx-auto w-28 h-28 rounded-full bg-gradient-to-br from-gold-primary to-amber-300 flex items-center justify-center shadow-lg">
+                  <Award className="w-16 h-16 text-emerald-900" />
+                </div>
               </motion.div>
 
               <motion.h2
@@ -103,7 +128,7 @@ export default function BadgeCelebration() {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 }}
-                className="inline-flex items-center justify-center w-32 h-32 rounded-full bg-white/20 backdrop-blur-sm mb-4 text-6xl"
+                className="inline-flex items-center justify-center w-36 h-36 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm mb-4 text-6xl shadow-inner"
               >
                 {badge.icon}
               </motion.div>
@@ -117,6 +142,18 @@ export default function BadgeCelebration() {
                 {badge.name}
               </motion.h3>
 
+              {/* Surah-specific info */}
+              {badge.surah && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.55 }}
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-emerald-600 to-sky-500 text-white text-sm shadow"
+                >
+                  <Crown className="w-4 h-4" /> Surah #{badge.surah}
+                </motion.div>
+              )}
+
               {badge.description && (
                 <motion.p
                   initial={{ opacity: 0 }}
@@ -128,6 +165,9 @@ export default function BadgeCelebration() {
                 </motion.p>
               )}
 
+              {/* Themed gradient stripe based on badge.color */}
+              <div className={`mx-auto mb-8 h-1 w-48 rounded-full bg-gradient-to-r ${badge.color}`} />
+
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -136,13 +176,14 @@ export default function BadgeCelebration() {
                 <Button
                   variant="outline"
                   onClick={closeBadgeCelebration}
-                  className="bg-white text-navy-primary hover:bg-white/90 border-none shadow-lg"
+                  className="bg-gradient-to-r from-gold-primary to-amber-300 text-emerald-950 hover:from-amber-300 hover:to-gold-primary border-0 shadow-lg"
                 >
                   Continue Journey
                 </Button>
               </motion.div>
             </div>
-          </Card>
+            </div>
+          </div>
         </motion.div>
       </motion.div>
     </AnimatePresence>

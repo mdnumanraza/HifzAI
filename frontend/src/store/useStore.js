@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { register, login } from '../api/auth.js';
+import useTravelModeStore from './useTravelModeStore.js';
 import { getDaily, markMemorized, getProgress, updateSettings } from '../api/memorization.js';
 import { 
   getStreak, getRewards, getRevisionList, getRevisionStats, 
@@ -7,6 +8,7 @@ import {
   sendBackToMemorization 
 } from '../api/phase2.js';
 import { updateProfile as updateProfileAPI, getProfileStats } from '../api/profile.js';
+import client from '../api/client.js';
 
 const TOKEN_KEY = 'hifzflow_token';
 const USER_KEY = 'hifzflow_user';
@@ -89,6 +91,20 @@ const useStore = create((set, get) => ({
   // Toast notifications
   toastMessage: null,
   toastType: null, // 'success' | 'error' | 'info'
+  
+  // Phase 3: AI Recitation Analysis
+  recitationAnalysis: {
+    latestResult: null,
+    loading: false,
+    error: null,
+    history: [],
+    stats: {
+      totalRecitations: 0,
+      averageAccuracy: 0,
+      highestAccuracy: 0,
+      recentRecitations: 0
+    }
+  },
 
   // Initialize auth from localStorage
   initAuth: () => {
@@ -107,6 +123,8 @@ const useStore = create((set, get) => ({
   
   logout: () => {
     clearStorage();
+    // Stop Travel Mode on logout
+    try { useTravelModeStore.getState().stopTravelSession(); } catch {}
     set({ token: null, user: null, dailyAyahs: [], progress: null });
   },
 
@@ -150,16 +168,8 @@ const useStore = create((set, get) => ({
   // Prefetch additional ayahs for instant loading
   prefetchMoreAyahs: async () => {
     try {
-      const response = await fetch('/memorization/next-batch?count=15', {
-        headers: {
-          'Authorization': `Bearer ${get().token}`
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        set({ nextAyahBuffer: data.ayahs || [] });
-      }
+      const response = await client.get('/memorization/next-batch?count=15');
+      set({ nextAyahBuffer: response.data.ayahs || [] });
     } catch (err) {
       console.error('Failed to prefetch ayahs:', err);
     }
@@ -169,28 +179,18 @@ const useStore = create((set, get) => ({
   fetchNextBatch: async () => {
     try {
       set({ fetchingMore: true });
-      const response = await fetch('/memorization/next-batch?count=10', {
-        headers: {
-          'Authorization': `Bearer ${get().token}`
-        }
+      const response = await client.get('/memorization/next-batch?count=10');
+      
+      const currentAyahs = get().dailyAyahs;
+      set({ 
+        dailyAyahs: [...currentAyahs, ...response.data.ayahs],
+        fetchingMore: false 
       });
       
-      if (response.ok) {
-        const data = await response.json();
-        const currentAyahs = get().dailyAyahs;
-        set({ 
-          dailyAyahs: [...currentAyahs, ...data.ayahs],
-          fetchingMore: false 
-        });
-        
-        get().showToast(`Added ${data.ayahs.length} more ayahs!`, 'success');
-        
-        // Refill buffer
-        get().prefetchMoreAyahs();
-      } else {
-        set({ fetchingMore: false });
-        get().showToast('Failed to fetch more ayahs', 'error');
-      }
+      get().showToast(`Added ${response.data.ayahs.length} more ayahs!`, 'success');
+      
+      // Refill buffer
+      get().prefetchMoreAyahs();
     } catch (err) {
       console.error('Failed to fetch next batch:', err);
       set({ fetchingMore: false });
@@ -592,6 +592,117 @@ const useStore = create((set, get) => ({
       get().fetchHistoryStats(),
       get().fetchProfileStats()
     ]);
+  },
+
+  // Phase 3: AI Recitation Analysis Functions
+  analyzeRecitation: async (audioBlob, surah, ayah) => {
+    try {
+      set(state => ({
+        recitationAnalysis: {
+          ...state.recitationAnalysis,
+          loading: true,
+          error: null
+        }
+      }));
+
+      // Create FormData for audio upload
+      const formData = new FormData();
+      formData.append('audioFile', audioBlob, 'recitation.webm');
+      formData.append('surah', surah.toString());
+      formData.append('ayah', ayah.toString());
+
+      const response = await client.post('/ai/analyze-recitation', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      const analysisResult = response.data;
+      
+      set(state => ({
+        recitationAnalysis: {
+          ...state.recitationAnalysis,
+          latestResult: analysisResult,
+          loading: false,
+          error: null
+        }
+      }));
+
+      // Refresh recitation stats
+      get().fetchRecitationStats();
+      
+      return analysisResult;
+    } catch (error) {
+      console.error('Recitation analysis failed:', error);
+      
+      set(state => ({
+        recitationAnalysis: {
+          ...state.recitationAnalysis,
+          loading: false,
+          error: error.message || 'Analysis failed'
+        }
+      }));
+      
+      throw error;
+    }
+  },
+
+  fetchRecitationHistory: async (page = 1, limit = 10, surah = null, ayah = null) => {
+    try {
+      const params = new URLSearchParams({ page: page.toString(), limit: limit.toString() });
+      if (surah) params.append('surah', surah.toString());
+      if (ayah) params.append('ayah', ayah.toString());
+
+      const response = await client.get(`/ai/recitation-history?${params}`);
+      const data = response.data;
+      
+      set(state => ({
+        recitationAnalysis: {
+          ...state.recitationAnalysis,
+          history: data.analyses
+        }
+      }));
+
+      return data;
+    } catch (error) {
+      console.error('Failed to fetch recitation history:', error);
+      set(state => ({
+        recitationAnalysis: {
+          ...state.recitationAnalysis,
+          error: error.message
+        }
+      }));
+      throw error;
+    }
+  },
+
+  fetchRecitationStats: async () => {
+    try {
+      const response = await client.get('/ai/recitation-stats');
+      const stats = response.data;
+      
+      set(state => ({
+        recitationAnalysis: {
+          ...state.recitationAnalysis,
+          stats
+        }
+      }));
+
+      return stats;
+    } catch (error) {
+      console.error('Failed to fetch recitation stats:', error);
+      throw error;
+    }
+  },
+
+  clearRecitationResult: () => {
+    set(state => ({
+      recitationAnalysis: {
+        ...state.recitationAnalysis,
+        latestResult: null,
+        error: null
+      }
+    }));
   }
 }));
 
